@@ -1,0 +1,28 @@
+{
+  "name": "@eliyya/type-routes",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "bin": "./lib/cli.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [
+    "typescript",
+    "next",
+    "nextjs",
+    "routes"
+  ],
+  "author": "eliyya",
+  "license": "MIT",
+  "description": "Type your Nextjs routes",
+  "devDependencies": {
+    "@types/node": ">=20.11",
+    "typescript": "^5"
+  },
+  "engineStrict": true,
+  "engines": {
+    "node": ">=20.11"
+  }
+}
