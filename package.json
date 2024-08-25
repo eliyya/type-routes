@@ -1,12 +1,14 @@
 {
   "name": "@eliyya/type-routes",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
+  "private": false,
   "bin": "./lib/cli.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "postinstall": "node ./lib/cli.js"
   },
   "keywords": [
     "typescript",
