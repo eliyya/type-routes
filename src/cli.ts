@@ -3,7 +3,7 @@ import { readdir, stat, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { Folder, Root } from './Tree.js';
 
-const ROOT_DIR = 'src/app'
+const ROOT_DIR = './src/app'
 
 async function generateRoutes(dir: string, parentRoute: Folder | Root) {
   const files = await readdir(dir);
