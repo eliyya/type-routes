@@ -1,11 +1,19 @@
 {
   "name": "@eliyya/type-routes",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "type": "module",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
   "private": false,
-  "bin": "./lib/cli.js",
+  "exports": {
+    ".": {
+      "import": "./lib/index.mjs"
+    },
+    "./next": {
+      "import": "./lib/next.mjs"
+    }
+  },
+  "bin": {
+    "type-routes": "./lib/cli.mjs"
+  },
   "scripts": {
     "build": "tsc"
   },
@@ -19,8 +27,26 @@
   "license": "MIT",
   "description": "Type your Nextjs routes",
   "devDependencies": {
-    "@types/node": ">=20.11",
-    "typescript": "^5"
+    "@eslint/js": "^9.15.0",
+    "@types/node": ">=22.9.3",
+    "chokidar": "^4",
+    "eslint": "^9.15.0",
+    "globals": "^15.12.0",
+    "next": "^14 || ^15",
+    "typescript": "^5",
+    "typescript-eslint": "^8.15.0"
+  },
+  "optionalDependencies": {
+    "chokidar": "^3 || ^4"
+  },
+  "peerDependencies": {
+    "chokidar": "^4",
+    "next": "^14 || ^15"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": false
+    }
   },
   "engineStrict": true,
   "engines": {

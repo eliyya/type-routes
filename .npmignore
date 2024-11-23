@@ -2,3 +2,5 @@ src
 node_modules
 .github
 tsconfig.json
+.prettierrc
+eslint.config.js
