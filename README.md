@@ -18,7 +18,7 @@ export default withTypeRoute({
 })
 ```
 
-Or run the cli manually if you don't want to modify your `next.config.mjs` to update your app's paths.
+Or run the cli to update your app's paths manually if you don't want to modify your `next.config.mjs`.
 
 ```bash
 npx type-routes
