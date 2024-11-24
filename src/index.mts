@@ -1,3 +1,3 @@
-export const root = () => '/'
-export const app = () => '/'
+export const root = () => '/' as const
+export const app = () => '/' as const
 export default app
