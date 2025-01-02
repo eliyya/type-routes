@@ -1,240 +1,209 @@
+import { isAbsolute, dirname, resolve, basename, extname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
-import { join } from 'node:path'
+import { readdirSync, statSync } from 'node:fs'
 
-export class Root {
-    #filename: string = 'app'
-    get filename() {
-        return this.#filename
-    }
-    children: Folder[] = []
-    #random = randomUUID().replace(/-/g, '')
-    get random() {
-        return this.#random
-    }
-    get args(): string[] {
-        return []
-    }
-    get returnName(): string {
-        return '/'
-    }
-    get typeName(): string {
-        return '/'
-    }
-    get varName(): string {
-        return 'root'
-    }
-    get filePath(): string {
-        return join(this.#filename)
-    }
-    get isRoot() {
-        return true
-    }
-    hasPage = false
+export class Node {
+    #dir: string
+    id: string
+    name: string
+    dirname: string
+    type: 'page' | 'handler' | 'dir' = 'dir'
+    children: Node[] = []
 
-    getAllFuncs(types = false): string {
-        return this.children.map(c => c.getAllFuncs(types)).join('\n')
+    constructor(path: string) {
+        this.id = '_' + randomUUID().replace(/-/g, '')
+        this.#dir = Node.#getDirectory(path)
+        this.dirname = basename(this.#dir)
+        this.name = Node.#parseName(this.dirname)
+        this.#processDirectory()
+        if (!this.name.startsWith('...')) {
+            this.#filterEmptyDirs()
+            this.#mergeParenthesisNames()
+            this.#mergeDuplicateChildren()
+        }
     }
 
-    getAssign(types = false): string {
-        return [
-            '/**\n * @deprecated use app instead\n */',
-            `${types ? '// @ts-ignore\n' : ''}export const root${
-                types ? ': Routes' : ''
-            } = () => \`/\``,
-            `${types ? '// @ts-ignore\n' : ''}export const app${
-                types ? ': Routes' : ''
-            } = () => \`/\``,
-        ].join('\n')
+    #processDirectory(): void {
+        try {
+            const entries = readdirSync(this.#dir)
+            for (const entry of entries) {
+                if (entry.startsWith('@')) continue
+                const fullPath = resolve(this.#dir, entry)
+                const stats = statSync(fullPath)
+                if (stats.isDirectory()) {
+                    if (!this.name.startsWith('...'))
+                        this.children.push(new Node(fullPath))
+                } else {
+                    const fileName = basename(entry, extname(entry))
+                    const extension = extname(entry)
+                    if (
+                        fileName === 'route' &&
+                        ['.ts', '.js'].includes(extension)
+                    )
+                        this.type = 'handler'
+                    else if (
+                        this.type !== 'handler' &&
+                        fileName === 'page' &&
+                        ['.ts', '.tsx', '.js', '.jsx'].includes(extension)
+                    )
+                        this.type = 'page'
+                }
+            }
+        } catch {
+            throw new Error(`No se pudo leer el directorio: ${this.#dir}`)
+        }
     }
 
-    getAllAssigns(types = false): string {
-        const assig = this.children.map(c => c.getAllAssigns(types)).join('\n')
-        return `${this.getAssign(types)}${assig ? `\n${assig}` : ''}`
+    #filterEmptyDirs(): void {
+        this.children = this.children.filter(child => {
+            child.#filterEmptyDirs()
+            return !(child.type === 'dir' && child.children.length === 0)
+        })
     }
 
-    getInterface(): string {
-        return [
-            'interface Routes {',
-            `    (): \`${this.typeName}\``,
-            `    ${this.children.map(c => c.getInterface(4)).join('\n')}`,
-            '}',
-        ].join('\n')
+    #mergeParenthesisNames(): void {
+        for (const child of this.children) {
+            if (child.name.startsWith('(') && child.name.endsWith(')')) {
+                if (child.type === 'page' && this.type !== 'handler')
+                    this.type = 'page'
+                if (child.type === 'handler') this.type = 'handler'
+                this.children = this.children.filter(c => c !== child)
+                this.children.push(...child.children)
+            }
+            child.#mergeParenthesisNames()
+        }
+    }
+
+    #mergeDuplicateChildren(): void {
+        const mergedChildren: Node[] = []
+
+        for (const child of this.children) {
+            const existingChild = mergedChildren.find(
+                c => c.name === child.name,
+            )
+
+            if (!existingChild) {
+                mergedChildren.push(child)
+                continue
+            }
+            existingChild.children.push(...child.children)
+            if (existingChild.type === 'dir') existingChild.type = child.type
+            else if (child.type === 'handler') existingChild.type = 'handler'
+        }
+
+        this.children = mergedChildren
+        for (const child of this.children) child.#mergeDuplicateChildren()
+    }
+
+    #getGenerics(params: string[]) {
+        const generics: string[] = []
+        generics.push(...params.map(p => `${p} extends string`))
+        if (this.name.startsWith('...'))
+            generics.push('R extends [string,...string[]]')
+        return generics.length ? `<${generics.join(',')}>` : ''
+    }
+
+    #getInterface(route: string, params: string[]): string {
+        if (route) {
+            if (this.name.startsWith('$')) route += `\${${this.name}}`
+            else if (this.name.startsWith('...')) route += `\${GR<R>}`
+            else route += this.name
+        }
+        route += '/'
+        if (this.name.startsWith('$') /*|| this.name.startsWith('...')*/)
+            params.push(this.name)
+        let paramString = params.map(p => `${p}:${p}`).join(', ')
+        paramString += this.name.startsWith('...') ? `,${this.name}:R` : ''
+        let out = ''
+        if (this.type !== 'dir')
+            out += `${this.#getGenerics(params)}(${paramString}):\`${route}\`;`
+        for (const child of this.children) {
+            out += `/** ${child.type} */${
+                child.name.startsWith('...')
+                    ? child.name.replace('...', '$$$$')
+                    : child.name
+            }:{${child.#getInterface(route, [...params])}};`
+        }
+        return out
+    }
+
+    get #genericGenerateRouteType() {
+        return 'type GR<R extends string[]>=R extends[]?never:R extends[string]?R[0]:R extends[infer F extends string,...infer Rest extends string[]]?`${F}/${GR<Rest>}`:never'
     }
 
     generateTypeScriptFile() {
-        return [
-            this.getAllFuncs(true),
-            this.getInterface(),
-            this.getAllAssigns(true),
-        ].join('\n')
+        return `${
+            this.#genericGenerateRouteType
+        };export interface Routes {${this.#getInterface(
+            '',
+            [],
+        )}};\nexport const app:Routes;\nexport default app`
+    }
+
+    #getFunctions(route: string, params: string[]) {
+        if (route) {
+            if (this.name.startsWith('$')) route += `\${${this.name}}`
+            else if (this.name.startsWith('...'))
+                route += `\${${this.name.replace('...', '')}.join('/')}`
+            else route += this.name
+        }
+        route += '/'
+        if (this.name.startsWith('$') || this.name.startsWith('...'))
+            params.push(this.name)
+        const out: string[] = []
+        const assignment =
+            this.type === 'dir' ? '{}' : `(${params.join(', ')})=>\`${route}\``
+        if (route !== '/') out.push(`const ${this.id}=${assignment}`)
+        for (const child of this.children) {
+            out.push(child.#getFunctions(route, [...params]))
+        }
+        return out.join(';')
+    }
+
+    #getAssignments(parentName: string) {
+        const out: string[] = []
+        if (this.name !== 'app')
+            out.push(
+                `${parentName}.${
+                    this.name.startsWith('...')
+                        ? this.name.replace('...', '$$$$')
+                        : this.name
+                }=${this.id}`,
+            )
+        for (const child of this.children)
+            out.push(
+                child.#getAssignments(this.name === 'app' ? 'app' : this.id),
+            )
+        return out.join(';')
     }
 
     generateJavaScriptFile() {
         return [
-            this.getAllFuncs(),
-            this.getAllAssigns(),
-            'export default app',
-        ].join('\n')
+            `export const app=()=>\`/\``,
+            this.#getFunctions('', []),
+            this.#getAssignments('app'),
+            `export default app`,
+        ].join(';')
     }
 
-    generateTypeFile() {
-        return [
-            this.getInterface(),
-            'export const root: Routes',
-            'export const app: Routes',
-            'export default app',
-        ].join('\n')
-    }
-
-    purge() {
-        this.children = this.children.filter(c => !c.canPurge())
-        return this
-    }
-
-    toJSON() {
-        return {
-            name: this.#filename,
-            varName: '/app',
-            random: this.random,
-            assign: this.getAssign(),
-            children: this.children,
-            hasPage: this.hasPage,
+    static #getDirectory(path: string): string {
+        path = path.startsWith('file://') ? fileURLToPath(path) : path
+        if (!isAbsolute(path))
+            throw new Error(`La ruta no es absoluta: ${path}`)
+        try {
+            const stats = statSync(path)
+            return stats.isDirectory() ? path : dirname(path)
+        } catch {
+            throw new Error(`La ruta no existe o no es accesible: ${path}`)
         }
     }
-}
 
-export class Folder extends Root {
-    #parent: Folder | Root
-    get parent() {
-        return this.#parent
-    }
-    #filename: string
-    get filename() {
-        return this.#filename
-    }
-    #args: string[] = []
-    get args() {
-        return this.#args
-    }
-    get isRoot(): boolean {
-        return false
-    }
-    #tsfunc: string
-    get tsfunc() {
-        return this.#tsfunc
-    }
-    #jsfunc: string
-    get jsfunc() {
-        return this.#jsfunc
-    }
-    #returnName: string
-    get returnName(): string {
-        return this.#returnName
-    }
-    #typeName: string
-    get typeName(): string {
-        return this.#typeName
-    }
-    #comment: string
-    get comment(): string {
-        return this.#comment
-    }
-    #filePath: string
-    get filePath(): string {
-        return this.#filePath
-    }
-    #varName: string
-    get varName(): string {
-        return this.#varName
-    }
-    hasPage = false
-
-    constructor(filename: string, parent: Folder | Root, hasPage = false) {
-        super()
-        this.#filename = filename
-        this.#parent = parent
-        this.#filePath = join(parent.filePath, filename)
-        this.#args = [...this.parent.args]
-        this.hasPage = hasPage
-
-        if (this.filename.startsWith('[') && this.filename.endsWith(']')) {
-            this.#args.push(this.filename.slice(1, -1))
-        }
-
-        if (this.filename.startsWith('[') && this.filename.endsWith(']')) {
-            this.#returnName =
-                this.parent.returnName +
-                '/${$' +
-                this.filename.slice(1, -1) +
-                '}'
-            this.#typeName = this.parent.typeName + '/${string}'
-            this.#varName = '$' + this.filename.slice(1, -1)
-        } else {
-            this.#returnName = this.parent.returnName + '/' + this.filename
-            this.#typeName = this.parent.typeName + '/' + this.filename
-            this.#varName = this.filename
-        }
-        if (this.#returnName.startsWith('//')) {
-            this.#returnName = this.#returnName.slice(1)
-        }
-        if (this.#typeName.startsWith('//')) {
-            this.#typeName = this.#typeName.slice(1)
-        }
-
-        this.#comment = `// fichero ${this.filePath}`
-
-        this.#tsfunc = `const _${this.random} = (${this.args
-            .map(a => `$${a}: string`)
-            .join(', ')}) => \`${this.returnName}\``
-        this.#jsfunc = `const _${this.random} = (${this.args
-            .map(a => `$${a}`)
-            .join(', ')}) => \`${this.returnName}\``
-    }
-
-    getAllFuncs(types = false): string {
-        const funcs = this.children.map(c => c.getAllFuncs(types)).join('\n')
-        const func = types ? this.tsfunc : this.jsfunc
-        return `${this.comment}\n${func}${funcs ? '\n' + funcs : ''}`
-    }
-
-    getAssign(types = false): string {
-        const ignoreComment = types ? '// @ts-ignore\n' : ''
-        if (this.parent.isRoot)
-            return [
-                `${this.comment}\n${ignoreComment}root.${this.varName} = _${this.random}`,
-                `${this.comment}\n${ignoreComment}app.${this.varName} = _${this.random}`,
-            ].join('\n')
-        return `${this.comment}\n${ignoreComment}_${this.parent.random}.${this.varName} = _${this.random}`
-    }
-
-    getInterface(indent = 4): string {
-        let childInterfaces =
-            this.children.map(c => c.getInterface(indent + 4)).join('\n') ?? ''
-        childInterfaces &&= '\n' + childInterfaces
-        const indentStr = ' '.repeat(indent)
-        const args = this.args.map(a => `$${a}: string`).join(', ')
-        const functionType = `${' '.repeat(indent + 4)}(${args}): \`${
-            this.typeName
-        }\``
-        return `${indentStr}${this.varName}: {\n${functionType}${childInterfaces}\n${indentStr}}`
-    }
-
-    canPurge() {
-        this.children = this.children.filter(c => !c.canPurge())
-        if (!this.children.length && !this.hasPage) return true
-    }
-
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    toJSON() {
-        return {
-            name: this.#filename,
-            filePath: this.filePath,
-            random: this.random,
-            func: this.tsfunc,
-            assign: this.getAssign(),
-            children: this.children,
-            hasPage: this.hasPage,
-        }
+    static #parseName(dirname: string) {
+        if (dirname.startsWith('[...') && dirname.endsWith(']'))
+            return dirname.slice(1, -1)
+        else if (dirname.startsWith('[') && dirname.endsWith(']'))
+            return '$' + dirname.slice(1, -1)
+        else return dirname
     }
 }
