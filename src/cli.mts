@@ -15,9 +15,6 @@ if (
 
 export function cli() {
     const root = new Node(ROOT_DIR)
-    console.dir(root, {
-        depth: null,
-    })
     writeFileSync(
         resolve(import.meta.dirname, './index.d.mts'),
         root.generateTypeScriptFile(),

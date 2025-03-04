@@ -1,6 +1,6 @@
 {
   "name": "@eliyya/type-routes",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "type": "module",
   "private": false,
   "exports": {
@@ -12,7 +12,7 @@
     }
   },
   "bin": {
-    "type-routes": "./lib/cli.mjs"
+    "type-routes": "lib/cli.mjs"
   },
   "scripts": {
     "build": "tsc"
@@ -27,20 +27,15 @@
   "license": "MIT",
   "description": "Type your Nextjs routes",
   "devDependencies": {
-    "@eslint/js": "^9.15.0",
-    "@types/node": ">=22.9.3",
-    "chokidar": "^4",
-    "eslint": "^9.15.0",
-    "globals": "^15.12.0",
-    "next": "^14 || ^15",
-    "typescript": "^5",
-    "typescript-eslint": "^8.15.0"
-  },
-  "optionalDependencies": {
-    "chokidar": "^3 || ^4"
+    "@eslint/js": "9.21.0",
+    "@types/node": "22.13.9",
+    "eslint": "9.21.0",
+    "globals": "16.0.0",
+    "next": "15.2.1",
+    "typescript": "5.8.2",
+    "typescript-eslint": "8.26.0"
   },
   "peerDependencies": {
-    "chokidar": "^4",
     "next": "^14 || ^15"
   },
   "peerDependenciesMeta": {
