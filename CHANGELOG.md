@@ -2,7 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
-# 2.0.0
+# 2.2.1
+
+## Fix
+
+-   **vanilla** Remove test
+
+# 2.2.0
+
+## Changues
+
+-   **vanilla** Removed all dependencies
+-   **lightweight** Reduced by 47%
+
+# 2.1.0
 
 ## Breaking Changues
 

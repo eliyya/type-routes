@@ -208,7 +208,7 @@ export class Node {
     }
 }
 
-const root = new Node(import.meta.resolve('../../ghost/src/app'))
-console.dir(root, {
-    depth: null,
-})
+// const root = new Node(import.meta.resolve('../../ghost/src/app'))
+// console.dir(root, {
+//     depth: null,
+// })
