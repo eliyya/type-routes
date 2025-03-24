@@ -1,6 +1,6 @@
 {
   "name": "@eliyya/type-routes",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "type": "module",
   "private": false,
   "exports": {
@@ -32,12 +32,12 @@
     "esbuild": "0.25.0",
     "eslint": "9.21.0",
     "globals": "16.0.0",
-    "next": "15.2.1",
+    "next": "15.2.3",
     "typescript": "5.8.2",
     "typescript-eslint": "8.26.0"
   },
   "peerDependencies": {
-    "next": "^14 || ^15 || 15.x.x-canary"
+    "next": ">=14"
   },
   "peerDependenciesMeta": {
     "next": {
