@@ -165,11 +165,11 @@ export class Node {
         const out: string[] = []
         if (this.name !== 'app')
             out.push(
-                `${parentName}.${
+                `${parentName}['${
                     this.name.startsWith('...')
                         ? this.name.replace('...', '$$$$')
                         : this.name
-                }=${this.id}`,
+                }']=${this.id}`,
             )
         for (const child of this.children)
             out.push(
@@ -208,11 +208,11 @@ export class Node {
     }
 }
 
-// test
-// const root = new Node(import.meta.resolve('../../sos/src/app'))
-// console.dir(root, {
-//     depth: null,
-// })
-// console.log(root.generateTypeScriptFile())
-// import { writeFileSync } from 'node:fs'
-// writeFileSync('./test.ts', root.generateTypeScriptFile())
+// // test
+const root = new Node(import.meta.resolve('../../sos/src/app'))
+console.dir(root, {
+    depth: null,
+})
+console.log(root.generateTypeScriptFile())
+import { writeFileSync } from 'node:fs'
+writeFileSync('./test.js', root.generateJavaScriptFile())

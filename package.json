@@ -1,6 +1,6 @@
 {
   "name": "@eliyya/type-routes",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "type": "module",
   "private": false,
   "exports": {
@@ -15,7 +15,8 @@
     "type-routes": "lib/cli.mjs"
   },
   "scripts": {
-    "build": "tsc && esbuild src/*.mts --minify --platform=node --outdir=lib --out-extension:.js=.mjs"
+    "build": "tsc && esbuild src/*.mts --minify --platform=node --outdir=lib --out-extension:.js=.mjs",
+    "postinstall": "./lib/cli.mjs || true"
   },
   "keywords": [
     "typescript",

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.2.6
+
+## Fix
+
+-   **\[name-fix]** Fix routes wit `-` in asigns
+
 # 2.2.5
 
 ## Fix
