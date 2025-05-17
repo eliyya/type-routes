@@ -208,11 +208,11 @@ export class Node {
     }
 }
 
-// // test
-const root = new Node(import.meta.resolve('../../sos/src/app'))
-console.dir(root, {
-    depth: null,
-})
-console.log(root.generateTypeScriptFile())
-import { writeFileSync } from 'node:fs'
-writeFileSync('./test.js', root.generateJavaScriptFile())
+// // // test
+// const root = new Node(import.meta.resolve('../../sos/src/app'))
+// console.dir(root, {
+//     depth: null,
+// })
+// console.log(root.generateTypeScriptFile())
+// import { writeFileSync } from 'node:fs'
+// writeFileSync('./test.js', root.generateJavaScriptFile())

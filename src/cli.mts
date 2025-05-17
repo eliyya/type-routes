@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path'
 import { writeFileSync } from 'node:fs'
 import { Node } from './Tree.mjs'
 
-const ROOT_DIR = join(process.cwd(), 'src', 'app')
+const ROOT_DIR = join(process.env.INIT_CWD || process.cwd(), 'src', 'app')
 
 if (
     import.meta.url.replace(/\\/g, '/') ===
