@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.2.5
+
+## Fix
+
+-   **name-fix** Fix routes wit `-` in names
+
+## Features
+
+-   **string | number** Acepts number in params routes
+
 # 2.2.1
 
 ## Fix

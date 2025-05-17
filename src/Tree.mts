@@ -98,7 +98,7 @@ export class Node {
 
     #getGenerics(params: string[]) {
         const generics: string[] = []
-        generics.push(...params.map(p => `${p} extends string`))
+        generics.push(...params.map(p => `${p} extends string | number`))
         if (this.name.startsWith('...'))
             generics.push('R extends [string,...string[]]')
         return generics.length ? `<${generics.join(',')}>` : ''
@@ -119,11 +119,11 @@ export class Node {
         if (this.type !== 'dir')
             out += `${this.#getGenerics(params)}(${paramString}):\`${route}\`;`
         for (const child of this.children) {
-            out += `/** ${child.type} */${
+            out += `/** ${child.type} */'${
                 child.name.startsWith('...')
                     ? child.name.replace('...', '$$$$')
                     : child.name
-            }:{${child.#getInterface(route, [...params])}};`
+            }':{${child.#getInterface(route, [...params])}};`
         }
         return out
     }
@@ -208,7 +208,11 @@ export class Node {
     }
 }
 
-// const root = new Node(import.meta.resolve('../../ghost/src/app'))
+// test
+// const root = new Node(import.meta.resolve('../../sos/src/app'))
 // console.dir(root, {
 //     depth: null,
 // })
+// console.log(root.generateTypeScriptFile())
+// import { writeFileSync } from 'node:fs'
+// writeFileSync('./test.ts', root.generateTypeScriptFile())
