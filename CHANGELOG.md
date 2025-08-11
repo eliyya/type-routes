@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.3.0
+
+## deeps
+
+-   **\[...all]** suport catch-all segments
+-   **\[\[all]]** suport optional catch-all segments
+
 # 2.2.8
 
 ## deeps

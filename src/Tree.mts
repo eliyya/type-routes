@@ -101,6 +101,8 @@ export class Node {
         generics.push(...params.map(p => `${p} extends string | number`))
         if (this.name.startsWith('...'))
             generics.push('R extends [string,...string[]]')
+        else if (this.name.startsWith('??'))
+            generics.push('R extends [] | [string,...string[]]')
         return generics.length ? `<${generics.join(',')}>` : ''
     }
 
@@ -114,7 +116,18 @@ export class Node {
         if (this.name.startsWith('$') /*|| this.name.startsWith('...')*/)
             params.push(this.name)
         let paramString = params.map(p => `${p}:${p}`).join(', ')
-        paramString += this.name.startsWith('...') ? `,${this.name}:R` : ''
+
+        if (this.name.startsWith('...')) {
+            paramString = paramString
+                ? `${paramString},${this.name}:R`
+                : `${this.name}:R`
+        } else if (this.name.startsWith('??')) {
+            const cleanName = this.name.slice(2) 
+            paramString = paramString
+                ? `${paramString},${cleanName}?:R`
+                : `${cleanName}?:R`
+        }
+        
         let out = ''
         if (this.type !== 'dir')
             out += `${this.#getGenerics(params)}(${paramString}):\`${route}\`;`
@@ -146,6 +159,7 @@ export class Node {
             if (this.name.startsWith('$')) route += `\${${this.name}}`
             else if (this.name.startsWith('...'))
                 route += `\${${this.name.replace('...', '')}.join('/')}`
+            else if (this.name.startsWith('??')) route += `\${(${this.name.slice(2)}?.length ? GR<R> : '')}`
             else route += this.name
         }
         route += '/'
@@ -200,6 +214,8 @@ export class Node {
     }
 
     static #parseName(dirname: string) {
+        if (dirname.startsWith('[[...') && dirname.endsWith(']]'))
+            return '??' + dirname.slice(4, -2)
         if (dirname.startsWith('[...') && dirname.endsWith(']'))
             return dirname.slice(1, -1)
         else if (dirname.startsWith('[') && dirname.endsWith(']'))
