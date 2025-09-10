@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.4.1
+
+## Fix
+
+-   **console** Remove console.log
+
 # 2.4.0
 
 ## config

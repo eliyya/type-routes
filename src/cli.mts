@@ -10,12 +10,12 @@ if (
     `file:///${process.argv[1]}`.replace(/\\/g, '/')
 ) {
     cli()
+    // eslint-disable-next-line no-console
     console.log('[type-routes] Routes typed')
 }
 
 export function cli({ extraRoutes = [] }: { extraRoutes?: string[] } = {}) {
     const root = new Node(ROOT_DIR, { extraRoutes })
-    console.log(extraRoutes);
     
     writeFileSync(
         resolve(import.meta.dirname, './index.d.mts'),
