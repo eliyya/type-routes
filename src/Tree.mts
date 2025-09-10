@@ -8,25 +8,52 @@ export class Node {
     id: string
     name: string
     dirname: string
-    type: 'page' | 'handler' | 'dir' = 'dir'
+    type: 'page' | 'handler' | 'dir' | 'extra' = 'dir'
     children: Node[] = []
+    #extraRoutes: string[] = []
 
-    constructor(path: string) {
+    constructor(path: string, {extraRoutes = []}: {extraRoutes?: string[]} = {}) {
+        this.#extraRoutes = extraRoutes.map(route => route.replace(/^\//, '').replace(/\/$/, ''))
         this.id = '_' + randomUUID().replace(/-/g, '')
         this.#dir = Node.#getDirectory(path)
         this.dirname = basename(this.#dir)
         this.name = Node.#parseName(this.dirname)
         this.#processDirectory()
         if (!this.name.startsWith('...')) {
-            this.#filterEmptyDirs()
+            // this.#filterEmptyDirs()
             this.#mergeParenthesisNames()
             this.#mergeDuplicateChildren()
+        }
+        if (this.name === 'app' && this.#extraRoutes.length) {
+            this.#insertExtraRoutes()
+        }
+    }
+
+    #insertExtraRoutes() {
+        for (const route of this.#extraRoutes) {
+            const parts = route.split('/')
+            // eslint-disable-next-line @typescript-eslint/no-this-alias
+            let current: Node = this
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i]
+                let child = current.children.find(c => c.name === part)
+                if (!child) {
+                    child = new Node(this.#dir, { extraRoutes: [] })
+                    child.name = part
+                    child.type = i === parts.length - 1 ? 'extra' : 'dir'
+                    child.dirname = part
+                    child.children = []
+                    current.children.push(child)
+                }
+                current = child
+            }
         }
     }
 
     #processDirectory(): void {
         try {
             const entries = readdirSync(this.#dir)
+            
             for (const entry of entries) {
                 if (entry.startsWith('@')) continue
                 const fullPath = resolve(this.#dir, entry)
@@ -50,6 +77,8 @@ export class Node {
                         this.type = 'page'
                 }
             }
+            
+            
         } catch {
             throw new Error(`No se pudo leer el directorio: ${this.#dir}`)
         }
@@ -224,11 +253,14 @@ export class Node {
     }
 }
 
-// // // test
-// const root = new Node(import.meta.resolve('../../sos/src/app'))
+// // test
+// const root = new Node(
+//     import.meta.resolve('../../sos/src/app'),
+//     {extraRoutes: ['/test', '/test/123']}
+// )
 // console.dir(root, {
 //     depth: null,
 // })
-// console.log(root.generateTypeScriptFile())
+// // console.log(root.generateTypeScriptFile())
 // import { writeFileSync } from 'node:fs'
 // writeFileSync('./test.js', root.generateJavaScriptFile())

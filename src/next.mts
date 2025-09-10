@@ -15,16 +15,32 @@ function debounce<T extends (...args: unknown[]) => void>(
 }
 
 const debounceCli = debounce(
-    (filePath: string) => filePath.endsWith('page.tsx') && cli(),
+    (filePath: string, options: WithTypeRouteOptions) => filePath.endsWith('page.tsx') && cli(options),
     200,
 )
 
-export function withTypeRoute(nextConfig: NextConfig = {}): NextConfig {
-    cli()
+export interface WithTypeRouteOptions {
+    extraRoutes?: string[]
+}
+
+
+
+export function withTypeRoute(options: WithTypeRouteOptions): NextConfig
+/**
+ * @deprecated
+ * Usa la forma `withTypeRoute(options: WithTypeRouteOptions, nextConfig: NextConfig)` en su lugar.
+ */
+export function withTypeRoute(options: NextConfig): NextConfig
+export function withTypeRoute(options: WithTypeRouteOptions, nextConfig:  NextConfig): NextConfig
+export function withTypeRoute(options: WithTypeRouteOptions, nextConfig?:  NextConfig): NextConfig {
+    if (!nextConfig && "extraRoutes" in options) return withTypeRoute(options, {})
+    if (!nextConfig) return withTypeRoute({ extraRoutes: [] }, options)
+
+    cli({ extraRoutes: options.extraRoutes ?? [] })
     return {
         ...nextConfig,
-        webpack(config, options) {
-            const dirPath = join(options.dir, 'src', 'app')
+        webpack(config, woptions) {
+            const dirPath = join(woptions.dir, 'src', 'app')
 
             // Usamos fs.watch para observar el directorio
             const watcher = watch(dirPath, { persistent: true })
@@ -34,15 +50,16 @@ export function withTypeRoute(nextConfig: NextConfig = {}): NextConfig {
                     filePath.endsWith('page.tsx') ||
                     filePath.endsWith('page.js')
                 ) {
-                    debounceCli(filePath)
+                    debounceCli(filePath, { extraRoutes: options.extraRoutes ?? [] })
                 }
             })
 
             return typeof nextConfig.webpack === 'function'
-                ? nextConfig.webpack(config, options)
+                ? nextConfig.webpack(config, woptions)
                 : config
         },
     }
 }
+
 
 export default withTypeRoute

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.4.0
+
+## config
+
+-   **config** now accepts `extraRoutes` option
+
 # 2.3.0
 
 ## deeps

@@ -13,8 +13,10 @@ if (
     console.log('[type-routes] Routes typed')
 }
 
-export function cli() {
-    const root = new Node(ROOT_DIR)
+export function cli({ extraRoutes = [] }: { extraRoutes?: string[] } = {}) {
+    const root = new Node(ROOT_DIR, { extraRoutes })
+    console.log(extraRoutes);
+    
     writeFileSync(
         resolve(import.meta.dirname, './index.d.mts'),
         root.generateTypeScriptFile(),
