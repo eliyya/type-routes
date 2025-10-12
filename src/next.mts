@@ -2,6 +2,7 @@ import { cli } from './cli.mjs'
 import type { NextConfig } from 'next'
 import { watch } from 'node:fs'
 import { join } from 'node:path'
+import { TypeRouteConfig } from './Tree.mjs'
 
 function debounce<T extends (...args: unknown[]) => void>(
     func: T,
@@ -15,18 +16,18 @@ function debounce<T extends (...args: unknown[]) => void>(
 }
 
 const debounceCli = debounce(
-    (filePath: string) => filePath.endsWith('page.tsx') && cli(),
+    (filePath: string, typeRouteConfig: TypeRouteConfig) => filePath.endsWith('page.tsx') && cli(typeRouteConfig),
     200,
 )
 
-export function withTypeRoute(nextConfig: NextConfig = {}): NextConfig {
-    cli()
+
+export function withTypeRoute(nextConfig: NextConfig = {}, typeRouteConfig: TypeRouteConfig = {}): NextConfig {
+    cli(typeRouteConfig)
     return {
         ...nextConfig,
         webpack(config, options) {
             const dirPath = join(options.dir, 'src', 'app')
 
-            // Usamos fs.watch para observar el directorio
             const watcher = watch(dirPath, { persistent: true })
 
             watcher.on('change', filePath => {
@@ -34,7 +35,7 @@ export function withTypeRoute(nextConfig: NextConfig = {}): NextConfig {
                     filePath.endsWith('page.tsx') ||
                     filePath.endsWith('page.js')
                 ) {
-                    debounceCli(filePath)
+                    debounceCli(filePath, typeRouteConfig)
                 }
             })
 
@@ -44,5 +45,5 @@ export function withTypeRoute(nextConfig: NextConfig = {}): NextConfig {
         },
     }
 }
-
+export { TypeRouteConfig }
 export default withTypeRoute

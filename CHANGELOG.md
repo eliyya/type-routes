@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.5.0
+
+## Features
+
+-   **definedParams** added support for defined params
+
 # 2.3.0
 
 ## deeps

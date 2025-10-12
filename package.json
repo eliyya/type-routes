@@ -1,6 +1,6 @@
 {
   "name": "@eliyya/type-routes",
-  "version": "2.3.0",
+  "version": "2.5.0",
   "type": "module",
   "private": false,
   "exports": {

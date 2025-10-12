@@ -3,6 +3,9 @@ import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 import { readdirSync, statSync } from 'node:fs'
 
+export type TypeRouteConfig = {
+    definedParams?: Record<string, string[]>
+}
 export class Node {
     #dir: string
     id: string
@@ -10,12 +13,14 @@ export class Node {
     dirname: string
     type: 'page' | 'handler' | 'dir' = 'dir'
     children: Node[] = []
+    typeRouteConfig: TypeRouteConfig
 
-    constructor(path: string) {
+    constructor(path: string, typeRouteConfig: TypeRouteConfig) {
         this.id = '_' + randomUUID().replace(/-/g, '')
         this.#dir = Node.#getDirectory(path)
         this.dirname = basename(this.#dir)
         this.name = Node.#parseName(this.dirname)
+        this.typeRouteConfig = typeRouteConfig
         this.#processDirectory()
         if (!this.name.startsWith('...')) {
             this.#filterEmptyDirs()
@@ -33,7 +38,7 @@ export class Node {
                 const stats = statSync(fullPath)
                 if (stats.isDirectory()) {
                     if (!this.name.startsWith('...'))
-                        this.children.push(new Node(fullPath))
+                        this.children.push(new Node(fullPath, this.typeRouteConfig))
                 } else {
                     const fileName = basename(entry, extname(entry))
                     const extension = extname(entry)
@@ -98,7 +103,11 @@ export class Node {
 
     #getGenerics(params: string[]) {
         const generics: string[] = []
-        generics.push(...params.map(p => `${p} extends string | number`))
+        generics.push(...params.map(p => {
+            if (p.substring(1) in this.typeRouteConfig.definedParams)
+                return `${p} extends '${this.typeRouteConfig.definedParams[p.substring(1)].join("' | '")}'`
+            return `${p} extends string | number`
+        }))
         if (this.name.startsWith('...'))
             generics.push('R extends [string,...string[]]')
         else if (this.name.startsWith('??'))
@@ -224,8 +233,12 @@ export class Node {
     }
 }
 
-// // // test
-// const root = new Node(import.meta.resolve('../../sos/src/app'))
+// // test
+// const root = new Node(import.meta.resolve('../../sos/src/app'), {
+//     definedParams: {
+//         locale: ['en', 'es'],
+//     },
+// })
 // console.dir(root, {
 //     depth: null,
 // })
