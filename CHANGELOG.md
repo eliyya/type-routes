@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.5.1
+
+## Fix
+
+-   **TypeError** fixed TypeError
+
 # 2.5.0
 
 ## Features

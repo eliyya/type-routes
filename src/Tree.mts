@@ -13,14 +13,16 @@ export class Node {
     dirname: string
     type: 'page' | 'handler' | 'dir' = 'dir'
     children: Node[] = []
-    typeRouteConfig: TypeRouteConfig
+    typeRouteConfig: TypeRouteConfig = {
+        definedParams: {},
+    }
 
     constructor(path: string, typeRouteConfig: TypeRouteConfig) {
         this.id = '_' + randomUUID().replace(/-/g, '')
         this.#dir = Node.#getDirectory(path)
         this.dirname = basename(this.#dir)
         this.name = Node.#parseName(this.dirname)
-        this.typeRouteConfig = typeRouteConfig
+        this.typeRouteConfig = { ...this.typeRouteConfig, ...typeRouteConfig }
         this.#processDirectory()
         if (!this.name.startsWith('...')) {
             this.#filterEmptyDirs()
@@ -38,7 +40,9 @@ export class Node {
                 const stats = statSync(fullPath)
                 if (stats.isDirectory()) {
                     if (!this.name.startsWith('...'))
-                        this.children.push(new Node(fullPath, this.typeRouteConfig))
+                        this.children.push(
+                            new Node(fullPath, this.typeRouteConfig),
+                        )
                 } else {
                     const fileName = basename(entry, extname(entry))
                     const extension = extname(entry)
@@ -103,11 +107,15 @@ export class Node {
 
     #getGenerics(params: string[]) {
         const generics: string[] = []
-        generics.push(...params.map(p => {
-            if (p.substring(1) in this.typeRouteConfig.definedParams)
-                return `${p} extends '${this.typeRouteConfig.definedParams[p.substring(1)].join("' | '")}'`
-            return `${p} extends string | number`
-        }))
+        generics.push(
+            ...params.map(p => {
+                if (p.substring(1) in this.typeRouteConfig.definedParams)
+                    return `${p} extends '${this.typeRouteConfig.definedParams[
+                        p.substring(1)
+                    ].join("' | '")}'`
+                return `${p} extends string | number`
+            }),
+        )
         if (this.name.startsWith('...'))
             generics.push('R extends [string,...string[]]')
         else if (this.name.startsWith('??'))
@@ -131,12 +139,12 @@ export class Node {
                 ? `${paramString},${this.name}:R`
                 : `${this.name}:R`
         } else if (this.name.startsWith('??')) {
-            const cleanName = this.name.slice(2) 
+            const cleanName = this.name.slice(2)
             paramString = paramString
                 ? `${paramString},${cleanName}?:R`
                 : `${cleanName}?:R`
         }
-        
+
         let out = ''
         if (this.type !== 'dir')
             out += `${this.#getGenerics(params)}(${paramString}):\`${route}\`;`
@@ -168,7 +176,8 @@ export class Node {
             if (this.name.startsWith('$')) route += `\${${this.name}}`
             else if (this.name.startsWith('...'))
                 route += `\${${this.name.replace('...', '')}.join('/')}`
-            else if (this.name.startsWith('??')) route += `\${(${this.name.slice(2)}?.length ? GR<R> : '')}`
+            else if (this.name.startsWith('??'))
+                route += `\${(${this.name.slice(2)}?.length ? GR<R> : '')}`
             else route += this.name
         }
         route += '/'
