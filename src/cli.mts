@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { join, resolve } from 'node:path'
 import { writeFileSync } from 'node:fs'
-import { Node, TypeRouteConfig } from './Tree.mjs'
+import { Node, type TypeRouteConfig } from './Tree.mjs'
 
 const ROOT_DIR = join(process.env.INIT_CWD || process.cwd(), 'src', 'app')
 

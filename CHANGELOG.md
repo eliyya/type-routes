@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.5.2
+
+## Fix
+
+-   **postinstall** fixed postinstall
+
 # 2.5.1
 
 ## Fix
