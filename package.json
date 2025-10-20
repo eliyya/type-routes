@@ -1,6 +1,6 @@
 {
   "name": "@eliyya/type-routes",
-  "version": "2.5.3",
+  "version": "2.5.4",
   "type": "module",
   "private": false,
   "exports": {
@@ -8,14 +8,14 @@
       "import": "./lib/index.js"
     },
     "./next": {
-      "import": "./lib/next.js"
+      "import": "./lib/cli.js"
     }
   },
   "bin": {
     "type-routes": "lib/cli.js"
   },
   "scripts": {
-    "build": "rimraf lib && tsc && esbuild src/*.ts --minify --platform=node --outdir=lib",
+    "build": "rimraf lib && tsc && node build.ts",
     "postinstall": "node lib/cli.js || echo \"\""
   },
   "keywords": [
