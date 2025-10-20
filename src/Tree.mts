@@ -3,64 +3,46 @@ import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 import { readdirSync, statSync } from 'node:fs'
 
+export type TypeRouteConfig = {
+    definedParams?: Record<string, string[]>
+}
 export class Node {
     #dir: string
     id: string
     name: string
     dirname: string
-    type: 'page' | 'handler' | 'dir' | 'extra' = 'dir'
+    type: 'page' | 'handler' | 'dir' = 'dir'
     children: Node[] = []
-    #extraRoutes: string[] = []
+    typeRouteConfig: TypeRouteConfig = {
+        definedParams: {},
+    }
 
-    constructor(path: string, {extraRoutes = []}: {extraRoutes?: string[]} = {}) {
-        this.#extraRoutes = extraRoutes.map(route => route.replace(/^\//, '').replace(/\/$/, ''))
+    constructor(path: string, typeRouteConfig: TypeRouteConfig) {
         this.id = '_' + randomUUID().replace(/-/g, '')
         this.#dir = Node.#getDirectory(path)
         this.dirname = basename(this.#dir)
         this.name = Node.#parseName(this.dirname)
+        this.typeRouteConfig = { ...this.typeRouteConfig, ...typeRouteConfig }
         this.#processDirectory()
         if (!this.name.startsWith('...')) {
-            // this.#filterEmptyDirs()
+            this.#filterEmptyDirs()
             this.#mergeParenthesisNames()
             this.#mergeDuplicateChildren()
-        }
-        if (this.name === 'app' && this.#extraRoutes.length) {
-            this.#insertExtraRoutes()
-        }
-    }
-
-    #insertExtraRoutes() {
-        for (const route of this.#extraRoutes) {
-            const parts = route.split('/')
-            // eslint-disable-next-line @typescript-eslint/no-this-alias
-            let current: Node = this
-            for (let i = 0; i < parts.length; i++) {
-                const part = parts[i]
-                let child = current.children.find(c => c.name === part)
-                if (!child) {
-                    child = new Node(this.#dir, { extraRoutes: [] })
-                    child.name = part
-                    child.type = i === parts.length - 1 ? 'extra' : 'dir'
-                    child.dirname = part
-                    child.children = []
-                    current.children.push(child)
-                }
-                current = child
-            }
         }
     }
 
     #processDirectory(): void {
         try {
             const entries = readdirSync(this.#dir)
-            
             for (const entry of entries) {
                 if (entry.startsWith('@')) continue
                 const fullPath = resolve(this.#dir, entry)
                 const stats = statSync(fullPath)
                 if (stats.isDirectory()) {
                     if (!this.name.startsWith('...'))
-                        this.children.push(new Node(fullPath))
+                        this.children.push(
+                            new Node(fullPath, this.typeRouteConfig),
+                        )
                 } else {
                     const fileName = basename(entry, extname(entry))
                     const extension = extname(entry)
@@ -77,8 +59,6 @@ export class Node {
                         this.type = 'page'
                 }
             }
-            
-            
         } catch {
             throw new Error(`No se pudo leer el directorio: ${this.#dir}`)
         }
@@ -127,7 +107,15 @@ export class Node {
 
     #getGenerics(params: string[]) {
         const generics: string[] = []
-        generics.push(...params.map(p => `${p} extends string | number`))
+        generics.push(
+            ...params.map(p => {
+                if (p.substring(1) in this.typeRouteConfig.definedParams)
+                    return `${p} extends '${this.typeRouteConfig.definedParams[
+                        p.substring(1)
+                    ].join("' | '")}'`
+                return `${p} extends string | number`
+            }),
+        )
         if (this.name.startsWith('...'))
             generics.push('R extends [string,...string[]]')
         else if (this.name.startsWith('??'))
@@ -151,12 +139,12 @@ export class Node {
                 ? `${paramString},${this.name}:R`
                 : `${this.name}:R`
         } else if (this.name.startsWith('??')) {
-            const cleanName = this.name.slice(2) 
+            const cleanName = this.name.slice(2)
             paramString = paramString
                 ? `${paramString},${cleanName}?:R`
                 : `${cleanName}?:R`
         }
-        
+
         let out = ''
         if (this.type !== 'dir')
             out += `${this.#getGenerics(params)}(${paramString}):\`${route}\`;`
@@ -188,7 +176,8 @@ export class Node {
             if (this.name.startsWith('$')) route += `\${${this.name}}`
             else if (this.name.startsWith('...'))
                 route += `\${${this.name.replace('...', '')}.join('/')}`
-            else if (this.name.startsWith('??')) route += `\${(${this.name.slice(2)}?.length ? GR<R> : '')}`
+            else if (this.name.startsWith('??'))
+                route += `\${(${this.name.slice(2)}?.length ? GR<R> : '')}`
             else route += this.name
         }
         route += '/'
@@ -253,14 +242,3 @@ export class Node {
     }
 }
 
-// // test
-// const root = new Node(
-//     import.meta.resolve('../../sos/src/app'),
-//     {extraRoutes: ['/test', '/test/123']}
-// )
-// console.dir(root, {
-//     depth: null,
-// })
-// // console.log(root.generateTypeScriptFile())
-// import { writeFileSync } from 'node:fs'
-// writeFileSync('./test.js', root.generateJavaScriptFile())

@@ -5,3 +5,4 @@ tsconfig.json
 .prettierrc
 eslint.config.js
 get_changelog.sh
+.vscode

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { join, resolve } from 'node:path'
 import { writeFileSync } from 'node:fs'
-import { Node } from './Tree.mjs'
+import { Node, type TypeRouteConfig } from './Tree.mjs'
 
 const ROOT_DIR = join(process.env.INIT_CWD || process.cwd(), 'src', 'app')
 
@@ -10,13 +10,12 @@ if (
     `file:///${process.argv[1]}`.replace(/\\/g, '/')
 ) {
     cli()
-    // eslint-disable-next-line no-console
     console.log('[type-routes] Routes typed')
 }
 
-export function cli({ extraRoutes = [] }: { extraRoutes?: string[] } = {}) {
-    const root = new Node(ROOT_DIR, { extraRoutes })
-    
+
+export function cli(typeRouteConfig: TypeRouteConfig = {}) {
+    const root = new Node(ROOT_DIR, typeRouteConfig)
     writeFileSync(
         resolve(import.meta.dirname, './index.d.mts'),
         root.generateTypeScriptFile(),

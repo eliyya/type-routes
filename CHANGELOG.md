@@ -2,17 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
-# 2.4.1
+# 2.5.2
 
 ## Fix
 
--   **console** Remove console.log
+-   **postinstall** fixed postinstall
 
-# 2.4.0
+# 2.5.1
 
-## config
+## Fix
 
--   **config** now accepts `extraRoutes` option
+-   **TypeError** fixed TypeError
+
+# 2.5.0
+
+## Features
+
+-   **definedParams** added support for defined params
 
 # 2.3.0
 

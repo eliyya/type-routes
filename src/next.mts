@@ -2,6 +2,7 @@ import { cli } from './cli.mjs'
 import type { NextConfig } from 'next'
 import { watch } from 'node:fs'
 import { join } from 'node:path'
+import type { TypeRouteConfig } from './Tree.mjs'
 
 function debounce<T extends (...args: unknown[]) => void>(
     func: T,
@@ -15,34 +16,18 @@ function debounce<T extends (...args: unknown[]) => void>(
 }
 
 const debounceCli = debounce(
-    (filePath: string, options: WithTypeRouteOptions) => filePath.endsWith('page.tsx') && cli(options),
+    (filePath: string, typeRouteConfig: TypeRouteConfig) => filePath.endsWith('page.tsx') && cli(typeRouteConfig),
     200,
 )
 
-export interface WithTypeRouteOptions {
-    extraRoutes?: string[]
-}
 
-
-
-export function withTypeRoute(options: WithTypeRouteOptions): NextConfig
-/**
- * @deprecated
- * Usa la forma `withTypeRoute(options: WithTypeRouteOptions, nextConfig: NextConfig)` en su lugar.
- */
-export function withTypeRoute(options: NextConfig): NextConfig
-export function withTypeRoute(options: WithTypeRouteOptions, nextConfig:  NextConfig): NextConfig
-export function withTypeRoute(options: WithTypeRouteOptions, nextConfig?:  NextConfig): NextConfig {
-    if (!nextConfig && "extraRoutes" in options) return withTypeRoute(options, {})
-    if (!nextConfig) return withTypeRoute({ extraRoutes: [] }, options)
-
-    cli({ extraRoutes: options.extraRoutes ?? [] })
+export function withTypeRoute(nextConfig: NextConfig = {}, typeRouteConfig: TypeRouteConfig = {}): NextConfig {
+    cli(typeRouteConfig)
     return {
         ...nextConfig,
-        webpack(config, woptions) {
-            const dirPath = join(woptions.dir, 'src', 'app')
+        webpack(config, options) {
+            const dirPath = join(options.dir, 'src', 'app')
 
-            // Usamos fs.watch para observar el directorio
             const watcher = watch(dirPath, { persistent: true })
 
             watcher.on('change', filePath => {
@@ -50,16 +35,15 @@ export function withTypeRoute(options: WithTypeRouteOptions, nextConfig?:  NextC
                     filePath.endsWith('page.tsx') ||
                     filePath.endsWith('page.js')
                 ) {
-                    debounceCli(filePath, { extraRoutes: options.extraRoutes ?? [] })
+                    debounceCli(filePath, typeRouteConfig)
                 }
             })
 
             return typeof nextConfig.webpack === 'function'
-                ? nextConfig.webpack(config, woptions)
+                ? nextConfig.webpack(config, options)
                 : config
         },
     }
 }
-
-
+export { TypeRouteConfig }
 export default withTypeRoute
