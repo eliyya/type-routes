@@ -1,2 +1,4 @@
 node_modules
 lib
+output.js
+output.d.ts

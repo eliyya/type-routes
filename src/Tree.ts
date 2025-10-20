@@ -124,12 +124,11 @@ export class Node {
     }
 
     #getInterface(route: string, params: string[]): string {
-        if (route) {
-            if (this.name.startsWith('$')) route += `\${${this.name}}`
-            else if (this.name.startsWith('...')) route += `\${GR<R>}`
-            else route += this.name
-        }
-        route += '/'
+        if (route !== '/') {
+            if (this.name.startsWith('$')) route += `/\${${this.name}}`
+            else if (this.name.startsWith('...')) route += `/\${GR<R>}`
+            else route += `/${this.name}`
+        } 
         if (this.name.startsWith('$') /*|| this.name.startsWith('...')*/)
             params.push(this.name)
         let paramString = params.map(p => `${p}:${p}`).join(', ')
@@ -185,7 +184,7 @@ export class Node {
             params.push(this.name)
         const out: string[] = []
         const assignment =
-            this.type === 'dir' ? '{}' : `(${params.join(', ')})=>\`${route}\``
+            this.type === 'dir' ? '{}' : `(${params.join(', ')})=>\`${route.endsWith('/') ? route.slice(0, -1) : route}\``
         if (route !== '/') out.push(`const ${this.id}=${assignment}`)
         for (const child of this.children) {
             out.push(child.#getFunctions(route, [...params]))

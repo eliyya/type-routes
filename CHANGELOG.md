@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# 2.5.3
+
+## Fix
+
+-   **output** removed tail slash
+
 # 2.5.2
 
 ## Fix

@@ -1,8 +1,8 @@
-import { cli } from './cli.mjs'
+import { cli } from './cli.js'
 import type { NextConfig } from 'next'
 import { watch } from 'node:fs'
 import { join } from 'node:path'
-import type { TypeRouteConfig } from './Tree.mjs'
+import type { TypeRouteConfig } from './Tree.ts'
 
 function debounce<T extends (...args: unknown[]) => void>(
     func: T,

@@ -1,22 +1,22 @@
 {
   "name": "@eliyya/type-routes",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "type": "module",
   "private": false,
   "exports": {
     ".": {
-      "import": "./lib/index.mjs"
+      "import": "./lib/index.js"
     },
     "./next": {
-      "import": "./lib/next.mjs"
+      "import": "./lib/next.js"
     }
   },
   "bin": {
-    "type-routes": "lib/cli.mjs"
+    "type-routes": "lib/cli.js"
   },
   "scripts": {
-    "build": "tsc && esbuild src/*.mts --minify --platform=node --outdir=lib --out-extension:.js=.mjs",
-    "postinstall": "node lib/cli.mjs || 0"
+    "build": "rimraf lib && tsc && esbuild src/*.ts --minify --platform=node --outdir=lib",
+    "postinstall": "node lib/cli.js || echo \"\""
   },
   "keywords": [
     "typescript",
@@ -28,14 +28,15 @@
   "license": "MIT",
   "description": "Type your Nextjs routes",
   "devDependencies": {
-    "@eslint/js": "9.21.0",
-    "@types/node": "22.13.9",
-    "esbuild": "0.25.0",
-    "eslint": "9.21.0",
-    "globals": "16.0.0",
-    "next": "15.2.4",
-    "typescript": "5.8.2",
-    "typescript-eslint": "8.26.0"
+    "@eslint/js": "9.38.0",
+    "@types/node": "24.9.0",
+    "esbuild": "0.25.11",
+    "eslint": "9.38.0",
+    "globals": "16.4.0",
+    "next": "15.5.6",
+    "rimraf": "6.0.1",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.46.1"
   },
   "peerDependencies": {
     "next": ">=14"
