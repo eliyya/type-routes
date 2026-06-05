@@ -1,6 +1,6 @@
 {
   "name": "@eliyya/type-routes",
-  "version": "2.5.5-canary.0",
+  "version": "3.0.0",
   "type": "module",
   "bin": {
     "type-routes": "./dist/cli.js"
