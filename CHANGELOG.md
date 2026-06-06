@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ## Breaking Changes
 
 -   **rewrite** Complete rewrite from scratch. TypeScript 6 and ESM.
--   **API** `withTypeRoute` → `withTypeRoutes` (plural). Options shape changed.
+-   **API** `withTypeRoute` -> `withTypeRoutes` (plural). Options shape changed.
 -   **import path** Previously `import { app } from '@eliyya/type-routes'` imported the generated runtime directly from the package. Now the package generates a file at the configured output path; you import from that file (e.g. `import { app } from '@/lib/routes'`).
 
 ## Features
@@ -16,14 +16,14 @@ All notable changes to this project will be documented in this file.
 -   **Next.js plugin** `withTypeRoutes()` generates runtime on config load. In dev mode, watches the input directory for `page.tsx`/`route.ts` changes and regenerates automatically.
 -   **extraRoutes** Force-generate routes that don't exist on disk (e.g. `'/'` when there's no `page.tsx` at root).
 -   **paramConstraints** Restrict dynamic parameter values at the type level (`<$locale extends 'en' | 'es'>`).
--   **Object.assign pattern** Mixed nodes — directories with both a `page.tsx`/`route.ts` and sub-routes — use `Object.assign(fn, { children })`, making the node both callable and a namespace.
+-   **Object.assign pattern** Mixed nodes - directories with both a `page.tsx`/`route.ts` and sub-routes - use `Object.assign(fn, { children })`, making the node both callable and a namespace.
 -   **Recursive template literal types** Deeply nested routes generate accurate path template literals with generic parameters.
--   **Catch-all segments** `[...param]` → `$$param` rest params. Optional catch-all `[[...param]]` → `_$$param` with default empty array.
+-   **Catch-all segments** `[...param]` -> `$$param` rest params. Optional catch-all `[[...param]]` -> `_$$param` with default empty array.
 
 ## Improvements
 
 -   **Architecture** Separated into `index.ts` (core tree/generation), `generate.ts` (file reading and orchestration shared by CLI and plugin), `next.ts` (plugin), `cli.ts` (binary).
--   **ESM** Full ESM support with `rewriteRelativeImportExtensions` for clean `.ts` → `.js` output.
+-   **ESM** Full ESM support with `rewriteRelativeImportExtensions` for clean `.ts` -> `.js` output.
 -   **Tests** 36 tests using Node's native test runner (`node:test` + `node:assert`). No Jest/vitest dependency.
 -   **Linting** ESLint flat config with `typescript-eslint` and `eslint-plugin-import-x` with TypeScript resolver.
 -   **Route groups** `(group)` segments stripped from generated paths.
