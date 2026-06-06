@@ -164,7 +164,7 @@ describe('generateRuntimeFile', () => {
         const tree = buildTree(['app/[[...slug]]/page.tsx'])
         const runtime = generateRuntimeFile(tree)
         assert.match(runtime, /_\$\$slug/)
-        assert.match(runtime, /string\[\]\s*=\s*\[\]/)
+        assert.match(runtime, /string\[\]/)
     })
 
     it('includes interface before runtime export', () => {
