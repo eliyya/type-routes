@@ -146,7 +146,7 @@ function nodeToType(
                 const paramsStr = child.params
                     .map((p) => {
                         if (p.startsWith('_$$'))
-                            return `...${p}?: ${p}[]`
+                            return `...${p}: ${p}[]`
                         if (p.startsWith('$$'))
                             return `...${p}: ${p}[]`
                         return `${p}: ${p}`
@@ -208,7 +208,7 @@ function nodeToRuntime(node: TreeNode, indent: string, pathParts: string[]): str
         const params = pageNode.params
         const paramStr = params
             .map((p) => {
-                if (p.startsWith('_$$')) return `...${p}: string[] = []`
+                if (p.startsWith('_$$')) return `...${p}: string[]`
                 if (p.startsWith('$$')) return `...${p}: string[]`
                 const vals = pageNode.constraints[p]
                 if (vals?.length) return `${p}: ${vals.map((v) => `'${v}'`).join(' | ')}`
