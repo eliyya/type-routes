@@ -1,70 +1,251 @@
 # type-routes
 
-Type your routes to avoid 404 redirects or callbacks.
+Generate a type-safe runtime and TypeScript interface from your Next.js App Router directory structure.
 
-Just only install with
+## Install
 
 ```shell
-npm i @eliyya/type-routes
+npm add type-routes
 ```
 
-Configure your `next.config.mjs`
+> Peer dependency: `next@^16.0.0` (optional — only needed for the Next.js plugin).
 
-```js
-import { withTypeRoute } from '@eliyya/type-routes/next'
+## CLI
 
-export default withTypeRoute({
-    /* config options here */
+```shell
+type-routes --help
+```
+
+```
+Usage: type-routes [options]
+
+Options:
+  -i, --input <dir>        App directory (default: src/app)
+  -o, --output <file>      Output file   (default: src/lib/routes.ts)
+  -w, --watch              Watch for changes
+      --debounce-ms <ms>   Debounce delay (default: 300)
+  -e, --extra <route>      Extra route path (can be repeated)
+  -h, --help               Show this help
+```
+
+### Examples
+
+```shell
+# Basic
+type-routes
+
+# Custom paths
+type-routes -i src/app -o src/lib/routes.ts
+
+# Watch mode
+type-routes -w
+
+# Force routes that don't exist on disk
+type-routes -e / -e /users
+```
+
+## Next.js Plugin
+
+```ts
+// next.config.ts
+import { withTypeRoutes } from 'type-routes/next'
+
+export default withTypeRoutes({
+    input: 'src/app',
+    output: 'src/lib/routes.ts',
+    extraRoutes: ['/', '/users'],
+    paramConstraints: { locale: ['en', 'es'] },
 })
 ```
 
-Or run the cli to update your app's paths manually if you don't want to modify your `next.config.mjs`.
+### PluginOptions
 
-```bash
-npx type-routes
-```
+| Option             | Type                       | Default               | Description                           |
+| ------------------ | -------------------------- | --------------------- | ------------------------------------- |
+| `input`            | `string`                   | `'src/app'`           | App directory                         |
+| `output`           | `string`                   | `'src/lib/routes.ts'` | Output file                           |
+| `extraRoutes`      | `string[]`                 | —                     | Force routes that don't exist on disk |
+| `paramConstraints` | `Record<string, string[]>` | —                     | Restrict dynamic param values         |
+| `watchDebounceMs`  | `number`                   | `300`                 | Debounce delay in dev mode            |
 
-And use in your application
+In **dev mode** the plugin watches the input directory for `page.tsx`/`route.ts` changes and regenerates automatically.
+
+## Usage
+
+Once generated, import the `app` object from your output file:
 
 ```ts
-import { app } from '@eliyya/type-routes'
+import { app } from '@/lib/routes' // adjust path to your output
 
-export async function AdminPage() {
-    const user = await getUser()
+// Static routes
+app.dashboard.settings() // → '/dashboard/settings'
 
-    if (!user) redirect(app.login())
-    if (!user.admin) redirect(app())
+// Dynamic routes
+app.users.$id('123') // → '/users/123'
 
-    const adminInfo = await api(app.api.adminInfo(), { id: user.id })
+// Catch-all routes
+app.api.auth.$$all('login', 'callback') // → '/api/auth/login/callback'
 
-    return (
-        <>
-            <nav>
-                <Link href={app.admin.panel()}></Link>
-                <Link href={app.admin.watcher()}></Link>
-            </nav>
-            <Dashboard info={adminInfo} />
-        </>
-    )
-}
+// Optional catch-all routes
+app.posts._$$slug() // → '/posts'
+app.posts._$$slug('hello') // → '/posts/hello'
+
+// With constraints
+app.$locale('en') // allowed, → '/en'
+app.$locale('fr') // type error if constraint is ['en','es']
+
+// Nested Object.assign pattern
+app.$locale.dashboard.reports.cc.$cc_id.$month.$year(
+    'en',   // $locale
+    'cc-1', // $cc_id
+    'jan',  // $month
+    '2026', // $year
+) // → '/en/dashboard/reports/cc/cc-1/jan/2026'
 ```
 
--   if the path is only a directory that contains more directories inside, will return an object with the directories that are found inside as properties with their respective type
-    > Example: `src/app/user/settings/` will be converted to `app.user` and return `{ settings: ... }`
--   If the path contains a [`page.js`](https://nextjs.org/docs/app/api-reference/file-conventions/page) file or [`route.js`](https://nextjs.org/docs/app/api-reference/file-conventions/route) file, it can be run as a function to return the string corresponding to the path
-    > Example: `src/app/user/page.js` will be converted to `app.user()` and return `'/user/'`
--   If it is a [dynamic route](https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes) marked by the [`[dirname]` convention](https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes#convention), it will be renamed to `$dirname` and the function will receive the parameters, this applies to your paths within it.
-    > Example:`src/app/user/[id]/[option]/page.js` will be converted to `app.user.$id.$option('123', 'abc')` and return `'/user/123/abc/'`
--   if the path is a [catch-all segment](https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes#catch-all-segments) marked by the [convention `[...dirname]`](https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes#catch-all-segments), it will be similar to a Dynamic Path, but it will be renamed to `$$dirname`
-    > Example:`src/app/user/[...rest]/page.js` will be converted to `app.user.$$rest('123', 'abc')` and return `'/user/123/abc/'`
+## Features
+
+### Static routes
+
+```
+app/dashboard/settings/page.tsx  →  app.dashboard.settings()
+```
+
+### Dynamic routes (`[param]`)
+
+```
+app/users/[id]/page.tsx  →  app.users.$id('123')
+
+app/[locale]/dashboard/page.tsx  →  app.$locale('en')
+```
+
+Params are prefixed with `$` when used as property names.
+
+### Catch-all routes (`[...param]`)
+
+```
+app/api/auth/[...all]/route.ts  →  app.api.auth.$$all('login', 'callback')
+```
+
+Catch-all params are prefixed with `$$`. They receive rest arguments and `join('/')` them into the path.
+
+### Optional catch-all routes (`[[...param]]`)
+
+```
+app/posts/[[...slug]]/page.tsx  →  app.posts._$$slug()
+app/posts/[[...slug]]/page.tsx  →  app.posts._$$slug('hello')
+```
+
+Optional catch-all params are prefixed with `_$$`. Defaults to empty array when omitted.
+
+### Route groups (`(group)`)
+
+Route-group segments like `(marketing)` are stripped from paths and do not appear in the generated types.
+
+### Object.assign pattern
+
+When a directory has both a `page.tsx`/`route.ts` and sub-routes, the generated runtime uses `Object.assign(fn, { children })`, so the node is both callable and has sub-properties:
+
+```
+app/dashboard/page.tsx          →  app.dashboard()         // → '/dashboard'
+app/dashboard/settings/page.tsx →  app.dashboard.settings() // → '/dashboard/settings'
+```
+
+## extraRoutes
+
+Force-generate routes even when the corresponding file doesn't exist on disk:
+
+```ts
+withTypeRoutes({
+    extraRoutes: [
+        '/', // → app/       (creates app(): `/`)
+        '/users', // → app/users/ (creates app.users(): `/users`)
+    ],
+})
+```
+
+| Passed         | Internal path             |
+| -------------- | ------------------------- |
+| `'/'`          | `app/page.tsx`            |
+| `'/users'`     | `app/users/page.tsx`      |
+| `'users/[id]'` | `app/users/[id]/page.tsx` |
+
+Useful when:
+
+- Your root (`/`) is served by a proxy but has no `app/page.tsx`
+- A directory has no `page.tsx` but the router resolves to a sub-route via middleware
+
+## paramConstraints
+
+Restrict dynamic parameter values at the type level:
+
+```ts
+withTypeRoutes({
+    paramConstraints: {
+        locale: ['en', 'es'],
+        role: ['admin', 'user'],
+    },
+})
+```
+
+Generated output:
+
+```ts
+// interface
+$locale: {
+    <$locale extends 'en' | 'es'>($locale: $locale): `/${$locale}/dashboard`
+}
+
+// runtime
+$locale: ($locale: 'en' | 'es') => `/${$locale}/dashboard`
+```
+
+Using a constrained param with an invalid value produces a type error:
+
+```ts
+app.$locale('en') // OK
+app.$locale('fr') // Type error: '"fr"' is not assignable to '"en" | "es"'
+```
+
+Keys are normalized: `locale` → `$locale`, `all` → `$$all`.
+
+## Programmatic API
+
+```ts
+import {
+    buildTree,
+    generateInterfaceFile,
+    generateRuntimeFile,
+    getRoutePaths,
+    extractParam,
+    resetId,
+    type TreeNode,
+    type RouteType,
+} from 'type-routes'
+
+// Read and build the tree
+const paths = await getRoutePaths('./src/app')
+const tree = buildTree(paths)
+
+// Or build with constraints
+const tree = buildTree(paths, { locale: ['en', 'es'] })
+
+// Generate files
+const interfaceCode = generateInterfaceFile(tree)
+const runtimeCode = generateRuntimeFile(tree)
+```
+
+## How it works
+
+1. Scans the input directory for `page.tsx` and `route.ts` files
+2. Builds a tree structure with node types (static, dynamic, catch-all, etc.)
+3. Generates a TypeScript `interface App` with recursive call signatures using template literal types
+4. Generates a runtime `export const app` with arrow functions and `Object.assign` for mixed nodes
+
+The output is written to a single `.ts` file that can be imported anywhere in your project.
 
 ## Motivation
 
-Creating new routes with a file-based router is so easy that sometimes we forget to update all the references in our code when a route is removed or changed.
+Next.js file-based routing makes it easy to add routes but hard to keep references in sync when routes change. The experimental `typedRoutes` only covers `<Link>` tags, leaving `redirect()`, `router.push()`, and API calls unchecked.
 
-Nextjs is taking action with the [experimental typedRoutes option](https://nextjs.org/docs/app/api-reference/config/typescript#statically-typed-links), however, this only works when used in Link tags, so there can be errors in runtime when using a redirect or even in references within our code.
-
-This package solves it in a magic and comfortable way bringing the routes as safe type functions to be able to provoke an error in compilation and to avoid disasters with a simple way to use it without so much configuration.
-
-> [!IMPORTANT]
-> You need to set `type: "module"` in your `package.json` if you use `withTypeRoute()` config in your `next.config.mjs`
+`type-routes` generates a fully typed route object for your entire app, catching mismatches at compile time.

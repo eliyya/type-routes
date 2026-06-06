@@ -10,17 +10,26 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            # 1. Checkout la rama main
             - name: Checkout main branch
               uses: actions/checkout@v4
 
-            # 2. Instalar dependencias y compilar el proyecto
-            - name: Install dependencies and run build
-              run: |
-                  npm install
-                  npm run build
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 11
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '24'
+                  registry-url: 'https://registry.npmjs.org'
+                  cache: 'pnpm'
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+            - name: Run build
+              run: pnpm run build
+            - name: Run tests
+              run: pnpm run test
 
-            # 3. Obtener la versión del package.json
             - name: Get version from package.json
               id: get-version
               run: |
@@ -28,19 +37,15 @@ jobs:
                   echo "version=$version" >> $GITHUB_ENV
                   echo "Release version: $version"
 
-            # 4. Set sudo
             - name: Make get_changelog.sh executable
               run: chmod +x ./get_changelog.sh
-            # 5. Obtener el changelog desde el script
+
             - name: Get release changelog
               id: get-changelog
               run: |
-                  changelog=$(./get_changelog.sh ${{ env.version }})
-                  echo "changelog<<EOF" >> $GITHUB_ENV
-                  echo "$changelog" >> $GITHUB_ENV
-                  echo "EOF" >> $GITHUB_ENV
+                  changelog=$(./get_changelog.sh ${{ env.version }} | jq -Rs .)
+                  echo "changelog=$changelog" >> $GITHUB_ENV
 
-            # 6. Crear una nueva release en GitHub
             - name: Create GitHub Release
               id: create_release
               uses: actions/create-release@v1
@@ -49,13 +54,12 @@ jobs:
               with:
                   tag_name: v${{ env.version }}
                   release_name: 'Release v${{ env.version }}'
-                  body: ${{ env.changelog }}
+                  body: ${{ fromJSON(env.changelog) }}
                   draft: false
                   prerelease: false
 
-            # 7. Publicar en npm
             - name: Publish to npm
               run: |
-                  npm publish
+                  pnpm publish --no-git-checks
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

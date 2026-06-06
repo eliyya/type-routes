@@ -1,73 +1,69 @@
 #!/usr/bin/env node
-import { join, resolve } from 'node:path'
-import { writeFileSync, watch } from 'node:fs'
-import { Node, type TypeRouteConfig } from './Tree.ts'
-import { NextConfig } from 'next'
+import { parseArgs } from 'node:util'
+import { watch } from 'node:fs'
+import { resolve } from 'node:path'
+import { generate } from './generate.ts'
 
-const ROOT_DIR = join(process.env.INIT_CWD || process.cwd(), 'src', 'app')
-
-if (
-    import.meta.url.replace(/\\/g, '/') ===
-    `file:///${process.argv[1]}`.replace(/\\/g, '/')
-) {
-    cli()
-    // eslint-disable-next-line no-console
-    console.log('[type-routes] Routes typed')
+function printHelp(): void {
+    process.stdout.write(
+        [
+            'Usage: type-routes [options]',
+            '',
+            'Options:',
+            '  -i, --input <dir>        App directory (default: src/app)',
+            '  -o, --output <file>      Output file   (default: src/lib/routes.ts)',
+            '  -w, --watch              Watch for changes',
+            '      --debounce-ms <ms>   Debounce delay (default: 300)',
+            '  -e, --extra <route>      Extra route path (can be repeated)',
+            '  -h, --help               Show this help',
+            '',
+        ].join('\n'),
+    )
+    process.exit(0)
 }
 
+const { values } = parseArgs({
+    options: {
+        input: { type: 'string', short: 'i', default: 'src/app' },
+        output: { type: 'string', short: 'o', default: 'src/lib/routes.ts' },
+        watch: { type: 'boolean', short: 'w', default: false },
+        'debounce-ms': { type: 'string', default: '300' },
+        extra: { type: 'string', short: 'e', multiple: true, default: [] },
+        help: { type: 'boolean', short: 'h', default: false },
+    },
+    strict: true,
+    allowPositionals: false,
+})
 
-export function cli(typeRouteConfig: TypeRouteConfig = {}) {
-    const root = new Node(ROOT_DIR, typeRouteConfig)
-    writeFileSync(
-        resolve(import.meta.dirname, './index.d.ts'),
-        root.generateTypeScriptFile(),
-    )
-    writeFileSync(
-        resolve(import.meta.dirname, './index.js'),
-        root.generateJavaScriptFile(),
-    )
-}
+if (values.help) printHelp()
 
-function debounce<T extends (...args: unknown[]) => void>(
-    func: T,
-    wait: number,
-): (...args: Parameters<T>) => void {
-    let timeoutId: NodeJS.Timeout | null = null
-    return (...args: Parameters<T>): void => {
-        if (timeoutId !== null) clearTimeout(timeoutId)
-        timeoutId = setTimeout(() => func(...args), wait)
+const dir = resolve(values.input)
+const out = resolve(values.output)
+const debMs = Number(values['debounce-ms'])
+
+generate(dir, out, values.extra)
+
+if (values.watch) {
+    let timer: ReturnType<typeof setTimeout> | null = null
+
+    try {
+        watch(dir, { recursive: true }, (event, filename) => {
+            if (!filename) return
+            const base = filename.split(/[/\\]/).pop() ?? ''
+            if (base !== 'page.tsx' && base !== 'route.ts') return
+            if (timer) clearTimeout(timer)
+            timer = setTimeout(() => {
+                console.log(`[type-routes] Change detected: ${filename}`)
+                generate(dir, out, values.extra)
+            }, debMs)
+        })
+        console.log(`[type-routes] Watching ${dir}`)
+    } catch (err) {
+        console.error(`[type-routes] Failed to watch ${dir}`, err)
+        process.exit(1)
     }
 }
 
-const debounceCli = debounce(
-    (filePath: string, typeRouteConfig: TypeRouteConfig) => filePath.endsWith('page.tsx') && cli(typeRouteConfig),
-    200,
-)
-
-
-export function withTypeRoute(nextConfig: NextConfig = {}, typeRouteConfig: TypeRouteConfig = {}): NextConfig {
-    cli(typeRouteConfig)
-    return {
-        ...nextConfig,
-        webpack(config, options) {
-            const dirPath = join(options.dir, 'src', 'app')
-
-            const watcher = watch(dirPath, { persistent: true })
-
-            watcher.on('change', filePath => {
-                if (
-                    filePath.endsWith('page.tsx') ||
-                    filePath.endsWith('page.js')
-                ) {
-                    debounceCli(filePath, typeRouteConfig)
-                }
-            })
-
-            return typeof nextConfig.webpack === 'function'
-                ? nextConfig.webpack(config, options)
-                : config
-        },
-    }
-}
-export { TypeRouteConfig }
-export default withTypeRoute
+process.on('SIGINT', () => {
+    process.exit(0)
+})

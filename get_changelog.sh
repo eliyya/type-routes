@@ -1,18 +1,14 @@
 #!/bin/bash
 
-# Archivo del changelog
 CHANGELOG_FILE="CHANGELOG.md"
-
-# Versión a buscar (pasada como argumento)
 VERSION="$1"
 
 if [[ -z "$VERSION" ]]; then
-  echo "Debes proporcionar una versión como argumento. Ejemplo: ./get_changelog.sh 2.7.0"
+  echo "Usage: $0 <version>"
   exit 1
 fi
 
-# Extraer el changelog de la versión especificada
 awk -v ver="^# $VERSION" '
   $0 ~ ver {flag=1; next}
-  /^#\s/ && flag {flag=0}
+  /^# / && flag {flag=0}
   flag' "$CHANGELOG_FILE"
