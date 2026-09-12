@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# 3.0.1
+
+## Security
+
+-   Update Next.js to 16.3.5 and sharp to 0.35.4 to address image decoding vulnerabilities.
+-   Raise the Next.js peer dependency minimum to 16.3.5. Existing applications must update their own Next.js dependency and lockfile to receive the fixes.
+
 # 3.0.0
 
 ## Breaking Changes
