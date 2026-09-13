@@ -8,7 +8,9 @@ Generate a type-safe runtime and TypeScript interface from your Next.js App Rout
 npm add type-routes
 ```
 
-> Peer dependency: `next@^16.0.0` (optional — only needed for the Next.js plugin).
+> Peer dependency: `next@^16.3.5` (required).
+
+Next.js 16.3.5 requires `sharp@^0.35.4`, which includes fixes for image decoding vulnerabilities. Existing applications must update their own Next.js dependency and lockfile; updating this package alone does not replace an already installed Next.js version.
 
 ## CLI
 
