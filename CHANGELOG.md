@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# 3.0.2
+
+## Improvements
+
+-   Add a SHA-256 comment to generated route files and skip rewriting them when the generated content has not changed.
+
 # 3.0.1
 
 ## Security

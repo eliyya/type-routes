@@ -245,6 +245,8 @@ const runtimeCode = generateRuntimeFile(tree)
 4. Generates a runtime `export const app` with arrow functions and `Object.assign` for mixed nodes
 
 The output is written to a single `.ts` file that can be imported anywhere in your project.
+The first line contains a SHA-256 hash of the generated content. Subsequent runs
+compare that hash and leave the file untouched when the routes have not changed.
 
 ## Motivation
 

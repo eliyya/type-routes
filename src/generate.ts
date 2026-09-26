@@ -1,6 +1,27 @@
-import { readdirSync, writeFileSync, mkdirSync } from 'node:fs'
+import {
+    existsSync,
+    mkdirSync,
+    readFileSync,
+    readdirSync,
+    writeFileSync,
+} from 'node:fs'
+import { createHash } from 'node:crypto'
 import { join, dirname } from 'node:path'
 import { buildTree, generateRuntimeFile } from './index.ts'
+
+const HASH_PREFIX = '// @type-routes-hash: '
+
+function hashContent(content: string): string {
+    return createHash('sha256').update(content).digest('hex')
+}
+
+function getGeneratedHash(content: string): string | null {
+    const firstLine = content.split(/\r?\n/, 1)[0]
+    if (!firstLine.startsWith(HASH_PREFIX)) return null
+
+    const hash = firstLine.slice(HASH_PREFIX.length)
+    return /^[a-f0-9]{64}$/.test(hash) ? hash : null
+}
 
 export function getRoutePathsSync(dir: string): string[] {
     const entries = readdirSync(dir, { recursive: true, withFileTypes: true })
@@ -15,7 +36,7 @@ export function getRoutePathsSync(dir: string): string[] {
                 .filter((s) => !/^\(.+\)$/.test(s))
                 .join('/')
         })
-    return [...new Set(paths)]
+    return [...new Set(paths)].sort()
 }
 
 function normalizeExtraRoute(route: string): string {
@@ -44,8 +65,19 @@ export function generate(
 
     const tree = buildTree(paths, paramConstraints)
     const code = generateRuntimeFile(tree)
+    const hash = hashContent(code)
+
+    if (existsSync(outPath)) {
+        const current = readFileSync(outPath, 'utf-8')
+        if (getGeneratedHash(current) === hash) {
+            console.log(`[type-routes] Unchanged ${outPath}`)
+            return
+        }
+    }
+
+    const output = `${HASH_PREFIX}${hash}\n${code}`
 
     mkdirSync(dirname(outPath), { recursive: true })
-    writeFileSync(outPath, code, 'utf-8')
+    writeFileSync(outPath, output, 'utf-8')
     console.log(`[type-routes] Generated ${outPath}`)
 }
