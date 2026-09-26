@@ -39,6 +39,10 @@
   "author": "eliyya",
   "license": "MIT",
   "description": "Type your Nextjs routes",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eliyya/type-routes.git"
+  },
   "devDependencies": {
     "@types/node": "^25.9.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
