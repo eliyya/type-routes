@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+# 3.1.0
+
+## Features
+
+-   Export `defineTypeRouteConfig` and `PluginOptions` from `@eliyya/type-routes`. Apply the returned wrapper to the existing Next configuration: `defineTypeRouteConfig(options)(nextConfig)`.
+-   Add the plugin's `quiet` option to hide routine generation/watcher logs while keeping errors visible, and `watch: false` to disable automatic development watching while retaining initial generation.
+-   Include an agent skill covering Next integration, CLI pipelines, and generated route helpers in the npm package.
+
+## Improvements
+
+-   Persist a SHA-256 fingerprint of normalized routes, extra routes, parameter constraints, and generator schema version before building the tree. Matching inputs and intact output skip tree/code generation across executions.
+-   Use a route-file index to handle content-only saves without rescanning the App Router directory. Reconcile directory moves, deletions, and ambiguous watcher events.
+-   Use asynchronous filesystem operations for CLI and watcher generation, with debounced event batches and a serialized queue.
+-   Share watchers per output within a process, clean up watchers on reconfiguration, ignore generated output/temporary-file events, and prevent obsolete generations from overwriting newer results.
+-   Verify the existing content hash, regenerate edited or deleted output, and commit generated files through an atomic replacement.
+
+## Fixes
+
+-   Resolve route paths relative to the configured input directory instead of the first ancestor named `app`, fixing projects whose working directory is `/app`.
+-   Generate an empty `app` object when the input directory has no route files, including after the last route is removed.
+-   Exit the CLI with a nonzero status on initial generation failures so pipelines stop before using stale output. Initial plugin generation failures also propagate to the caller.
+-   Correct README imports, dynamic-route examples, optional catch-all output, and the documented programmatic API.
+
+## Deprecations
+
+-   Mark `withTypeRoutes` from `@eliyya/type-routes/next` as deprecated. It remains a compatibility alias; migrate to `defineTypeRouteConfig` from the main package entry.
+
 # 3.0.2
 
 ## Improvements
