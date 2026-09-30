@@ -1,3 +1,5 @@
+export { defineTypeRouteConfig, type PluginOptions } from './config.ts'
+
 export type RouteType =
     | 'page'
     | 'api'

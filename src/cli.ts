@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util'
-import { watch } from 'node:fs'
 import { resolve } from 'node:path'
-import { generate } from './generate.ts'
+import { RouteGenerator } from './generate.ts'
+import { watchRoutes } from './watch.ts'
 
 function printHelp(): void {
     process.stdout.write(
@@ -41,23 +41,25 @@ const dir = resolve(values.input)
 const out = resolve(values.output)
 const debMs = Number(values['debounce-ms'])
 
-generate(dir, out, values.extra)
+const generator = new RouteGenerator(dir, out, { extraRoutes: values.extra })
+let stopWatching: (() => void) | undefined
+
+try {
+    await generator.generate()
+} catch (err) {
+    console.error(`[type-routes] Failed to generate ${out}`, err)
+    process.exit(1)
+}
 
 if (values.watch) {
-    let timer: ReturnType<typeof setTimeout> | null = null
-
     try {
-        watch(dir, { recursive: true }, (event, filename) => {
-            if (!filename) return
-            const base = filename.split(/[/\\]/).pop() ?? ''
-            if (base !== 'page.tsx' && base !== 'route.ts') return
-            if (timer) clearTimeout(timer)
-            timer = setTimeout(() => {
-                console.log(`[type-routes] Change detected: ${filename}`)
-                generate(dir, out, values.extra)
-            }, debMs)
+        stopWatching = watchRoutes(dir, out, generator, {
+            debounceMs: debMs,
+            onError: (err) => {
+                console.error(`[type-routes] Failed to update routes for ${dir}`, err)
+                process.exitCode = 1
+            },
         })
-        console.log(`[type-routes] Watching ${dir}`)
     } catch (err) {
         console.error(`[type-routes] Failed to watch ${dir}`, err)
         process.exit(1)
@@ -65,5 +67,6 @@ if (values.watch) {
 }
 
 process.on('SIGINT', () => {
-    process.exit(0)
+    stopWatching?.()
+    process.exit(process.exitCode ?? 0)
 })
