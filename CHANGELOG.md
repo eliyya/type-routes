@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 -   Resolve route paths relative to the configured input directory instead of the first ancestor named `app`, fixing projects whose working directory is `/app`.
 -   Generate an empty `app` object when the input directory has no route files, including after the last route is removed.
 -   Exit the CLI with a nonzero status on initial generation failures so pipelines stop before using stale output. Initial plugin generation failures also propagate to the caller.
+-   Preserve the CLI's failure exit status when a failed watch session is stopped with Ctrl+C.
 -   Correct README imports, dynamic-route examples, optional catch-all output, and the documented programmatic API.
 
 ## Deprecations

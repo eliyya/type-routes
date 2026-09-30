@@ -68,5 +68,5 @@ if (values.watch) {
 
 process.on('SIGINT', () => {
     stopWatching?.()
-    process.exit(0)
+    process.exit(process.exitCode ?? 0)
 })
